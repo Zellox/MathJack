@@ -1,0 +1,41 @@
+﻿# Fichiers Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+
+# Fichiers utilisateur Unity
+UserSettings/
+
+# Fichiers de cache
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Fichiers de JetBrains Rider
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Fichiers npm
+node_modules/
+package-lock.json
+
+# Fichiers système
+.DS_Store
+Thumbs.db
