@@ -6,6 +6,30 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/GameScene.unity
-    guid: 2cda990e2423bbf4892e6590ba056729
+    path: "Assets/Scenes/cr\xE9erCompte.unity"
+    guid: d9e367b2a3ceb5844aed1200bd226eaf
+  - enabled: 1
+    path: Assets/Scenes/menuPrincipal.unity
+    guid: 7b362e9be52202a4e8ef9f76ee017ca9
+  - enabled: 1
+    path: Assets/Scenes/monCompte.unity
+    guid: 24e35b169317403478827e4e6de7494b
+  - enabled: 1
+    path: Assets/Scenes/regles.unity
+    guid: a14990e0766a0214195b87fd64ad426c
+  - enabled: 1
+    path: Assets/Scenes/classement.unity
+    guid: 372b4bd9aca364c4cb687d98edf63411
+  - enabled: 1
+    path: Assets/Scenes/SampleScene.unity
+    guid: 50dd7bdab27382647aa3dbbc7f8750d9
+  - enabled: 1
+    path: Assets/Scenes/Victoire.unity
+    guid: f73154f93daf7b244b82a4f70d5dbb8e
+  - enabled: 1
+    path: Assets/Scenes/defaite.unity
+    guid: d192d080da70d914c98a21a4dad32f6a
+  - enabled: 1
+    path: Assets/Scenes/egalite.unity
+    guid: 9315b952cbaf4c0448676bd3b3a60ae7
   m_configObjects: {}

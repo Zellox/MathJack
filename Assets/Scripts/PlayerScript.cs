@@ -14,7 +14,7 @@ public class PlayerScript : MonoBehaviour
     public int handValue = 0;
 
     // Betting money
-    private int money = 1000;
+    private int money = Connexion.user.pieces;
 
     // Array of card objects on table
     public GameObject[] hand;
@@ -27,6 +27,26 @@ public class PlayerScript : MonoBehaviour
     {
         GetCard();
         GetCard();
+    }
+    void Start()
+    {
+        // Référence automatiquement le Deck dans la scène
+        if (deckScript == null)
+        {
+            deckScript = FindObjectOfType<DeckScript>();
+        }
+
+        // Idem si tu as besoin d’un CardScript de référence
+        if (cardScript == null)
+        {
+            cardScript = FindObjectOfType<CardScript>();
+        }
+
+        // // Et tu peux lancer la main si c'est ton joueur local
+        // if (GetComponent<Photon.Pun.PhotonView>().IsMine)
+        // {
+        //     StartHand();
+        // }
     }
 
     // Add a hand to the player/dealer's hand

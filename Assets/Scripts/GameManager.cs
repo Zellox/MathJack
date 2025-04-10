@@ -2,8 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UI;
+
+
 
 public class GameManager : MonoBehaviour
 {
@@ -12,14 +15,28 @@ public class GameManager : MonoBehaviour
     public Button hitBtn;
     public Button standBtn;
     public Button betBtn;
-
+    public Button betBtn2;
+    public Button betBtn3;
+    public MusicManager musicManager;
+    
     private int standClicks = 0;
+    public int quizMultiplier = 1; // commence à 1
+    public bool quizReady = true; // indique si un quiz peut être lancé maintenant
+    public bool gameOver = false; // indique que la manche est finie
+    public Difficulty currentDifficulty = Difficulty.Moyen; // par défaut
+
+
+
 
     // Access the player and dealer's script
     public PlayerScript playerScript;
     public PlayerScript dealerScript;
     public QuizManager quizManager;
+    public bool quizBonus = false;
 
+    // Acces the AddMoney and AddExp script
+    public AddMoney addMoneyScript;
+    public AddExp addExpScript;
 
     // public Text to access and update - hud
     public Text scoreText;
@@ -28,26 +45,59 @@ public class GameManager : MonoBehaviour
     public Text cashText;
     public Text mainText;
     public Text standBtnText;
+    public Button quitBtn;
 
     // Card hiding dealer's 2nd card
     public GameObject hideCard;
     // How much is bet
-    int pot = 0;
+    public int pot = 0;
 
     public bool quizUsed = false;
 
 
     void Start()
     {
+        dealBtn.onClick.RemoveAllListeners();
+        dealBtn.onClick.AddListener(() => DealClicked());
+
         // Add on click listeners to the buttons
         dealBtn.onClick.AddListener(() => DealClicked());
         hitBtn.onClick.AddListener(() => HitClicked());
         standBtn.onClick.AddListener(() => StandClicked());
         betBtn.onClick.AddListener(() => BetClicked());
+        betBtn2.onClick.AddListener(() => BetClicked2());
+        betBtn3.onClick.AddListener(() => BetClicked3());
+        hitBtn.gameObject.SetActive(false);
+        standBtn.gameObject.SetActive(false);
+        standBtn.GetComponentInChildren<Text>().text = "RESTER";
+        hitBtn.GetComponentInChildren<Text>().text = "TIRER";
+        dealBtn.GetComponentInChildren<Text>().text = "JOUER";
+        scoreText.text = "";
+        dealerScoreText.text = "";
+        betsText.text = "";
+        quizMultiplier = 1;
+        mainText.gameObject.SetActive(false);
+        dealerScoreText.gameObject.SetActive(false);
+        quitBtn.gameObject.SetActive(false);
+
+
     }
+    public int GetPot()
+    {
+        return pot;
+    }
+
 
     private void DealClicked()
     {
+        musicManager.PlayButtonClickSound();
+        dealBtn.gameObject.SetActive(false);
+        quitBtn.gameObject.SetActive(false);
+        if (gameOver)
+        {
+            gameOver = false;
+        }
+
         // Reset round, hide text, prep for new hand
         playerScript.ResetHand();
         dealerScript.ResetHand();
@@ -55,60 +105,93 @@ public class GameManager : MonoBehaviour
         dealerScoreText.gameObject.SetActive(false);
         mainText.gameObject.SetActive(false);
         dealerScoreText.gameObject.SetActive(false);
+
         GameObject.Find("Deck").GetComponent<DeckScript>().Shuffle();
         playerScript.StartHand();
         dealerScript.StartHand();
-        // Update the scores displayed
-        scoreText.text = "Hand: " + playerScript.handValue.ToString();
-        dealerScoreText.text = "Hand: " + dealerScript.handValue.ToString();
+        scoreText.text = "Main: " + playerScript.handValue.ToString();
+        dealerScoreText.text = "Main: " + dealerScript.handValue.ToString();
+        betsText.text = "Somme: $" + (pot * quizMultiplier).ToString();
+
+
         // Place card back on dealer card, hide card
         hideCard.GetComponent<Renderer>().enabled = true;
         // Adjust buttons visibility
-        dealBtn.gameObject.SetActive(true);
         hitBtn.gameObject.SetActive(true);
         standBtn.gameObject.SetActive(true);
-        dealBtn.onClick.RemoveAllListeners();
-        standBtnText.text = "Rester";
+        // On affiche "QUIZ" mais uniquement si la partie n'est pas terminée
+        if (!gameOver)
+        {
+            dealBtn.GetComponentInChildren<Text>().text = "QUIZ";
+            dealBtn.onClick.RemoveAllListeners();
+            hitBtn.gameObject.SetActive(false);
+            standBtn.gameObject.SetActive(false);
+            dealBtn.onClick.AddListener(() => quizManager.OpenQuiz());
+        }
+        else
+        {
+            dealBtn.GetComponentInChildren<Text>().text = "REJOUER";
+            dealBtn.onClick.RemoveAllListeners();
+            dealBtn.onClick.AddListener(() => DealClicked());
+        }
+
+
+        standBtnText.text = "RESTER";
         // Set standard pot size
-        pot = 40;
-        betsText.text = "Bets: $" + pot.ToString();
+        betsText.text = "Somme: $" + (pot * quizMultiplier).ToString();
         playerScript.AdjustMoney(-20);
         cashText.text = "$" + playerScript.GetMoney().ToString();
-        hitBtn.onClick.AddListener(() => quizManager.OpenQuiz());
-        standBtn.onClick.AddListener(() => quizManager.OpenQuiz());
+
+        quizMultiplier = 1; // on recommence à 1 à chaque tour
+        quizUsed = false;
+        quizReady = true;
+        if (!gameOver)
+        {
+            quizManager.OpenQuiz();
+        }
+
+
+
+
+
     }
 
     private void HitClicked()
     {
+        musicManager.PlayButtonClickSound();
+        if (gameOver) return; // ne rien faire si la partie est finie
+
         // Check that there is still room on the table
         if (playerScript.cardIndex <= 10)
         {
             playerScript.GetCard();
-            scoreText.text = "Hand: " + playerScript.handValue.ToString();
+            scoreText.text = "Main: " + playerScript.handValue.ToString();
             if (playerScript.handValue > 20) RoundOver();
         }
-        if (!quizUsed)
+        if (quizUsed && !gameOver)
         {
-            hitBtn.onClick.RemoveAllListeners();
-            hitBtn.onClick.AddListener(() => quizManager.OpenQuiz());
+            quizManager.OpenQuiz();
+            quizUsed = false;
         }
-        hitBtn.onClick.AddListener(() => HitClicked());
-        quizUsed = false;
+
+
     }
 
     private void StandClicked()
     {
+        musicManager.PlayButtonClickSound();
+        if (gameOver) return; // ne rien faire si la partie est finie
+
         standClicks++;
         if (standClicks > 1) RoundOver();
         HitDealer();
-        standBtnText.text = "Call";
-        if (!quizUsed)
+        if (quizUsed && !gameOver)
         {
-            standBtn.onClick.RemoveAllListeners();
-            standBtn.onClick.AddListener(() => quizManager.OpenQuiz());
+            quizManager.OpenQuiz();
+            quizUsed = false;
         }
-        standBtn.onClick.AddListener(() => StandClicked());
-        quizUsed = false;
+
+
     }
 
     private void HitDealer()
@@ -116,11 +199,17 @@ public class GameManager : MonoBehaviour
         while (dealerScript.handValue < 16 && dealerScript.cardIndex < 10)
         {
             dealerScript.GetCard();
-            dealerScoreText.text = "Hand: " + dealerScript.handValue.ToString();
+            dealerScoreText.text = "Main: " + dealerScript.handValue.ToString();
             if (dealerScript.handValue > 20) RoundOver();
         }
     }
-
+    
+    void LoadScene(string sceneName)
+    {
+        Debug.Log("Chargement de la scène : " + sceneName);
+        SceneManager.LoadScene(sceneName);
+    }
+    
     // Check for winnner and loser, hand is over
     void RoundOver()
     {
@@ -135,24 +224,32 @@ public class GameManager : MonoBehaviour
         // All bust, bets returned
         if (playerBust && dealerBust)
         {
-            mainText.text = "All Bust: Bets returned";
+            mainText.text = "Egalite : Sommes retrouvees";
             playerScript.AdjustMoney(pot / 2);
         }
         // if player busts, dealer didnt, or if dealer has more points, dealer wins
         else if (playerBust || (!dealerBust && dealerScript.handValue > playerScript.handValue))
         {
-            mainText.text = "Dealer wins!";
+            LoadScene("defaite");
+            addMoneyScript.AddMoneyToAccount(Connexion.user.username, -pot);
         }
+        
+        // if player busts, dealer didnt, or if dealer has more points, dealer wins
+
         // if dealer busts, player didnt, or player has more points, player wins
         else if (dealerBust || playerScript.handValue > dealerScript.handValue)
         {
-            mainText.text = "You win!";
-            playerScript.AdjustMoney(pot);
+            LoadScene("Victoire");
+            playerScript.AdjustMoney(pot * quizMultiplier);
+            addMoneyScript.AddMoneyToAccount(Connexion.user.username, pot * quizMultiplier);
+            addExpScript.AddExpToAccount(Connexion.user.username, 50);
+            musicManager.PlayVictorySound();
         }
+
         //Check for tie, return bets
         else if (playerScript.handValue == dealerScript.handValue)
         {
-            mainText.text = "Push: Bets returned";
+            LoadScene("egalite");
             playerScript.AdjustMoney(pot / 2);
         }
         else
@@ -166,7 +263,7 @@ public class GameManager : MonoBehaviour
             standBtn.gameObject.SetActive(false);
             dealBtn.gameObject.SetActive(true);
             Text btnText = dealBtn.GetComponentInChildren<Text>();
-            btnText.text = "DEAL";
+
 
             // Remettre le listener original
             dealBtn.onClick.RemoveAllListeners();
@@ -177,7 +274,16 @@ public class GameManager : MonoBehaviour
             hideCard.GetComponent<Renderer>().enabled = false;
             cashText.text = "$" + playerScript.GetMoney().ToString();
             standClicks = 0;
+            gameOver = true;
+            dealBtn.GetComponentInChildren<Text>().text = "REJOUER";
+            dealBtn.onClick.RemoveAllListeners();
+            dealBtn.onClick.AddListener(() => DealClicked());
+            quitBtn.gameObject.SetActive(true);
+            dealBtn.gameObject.SetActive(true);
+
+
         }
+
     }
 
     // Add money to pot if bet clicked
@@ -187,7 +293,51 @@ public class GameManager : MonoBehaviour
         int intBet = int.Parse(newBet.text.ToString().Remove(0, 1));
         playerScript.AdjustMoney(-intBet);
         cashText.text = "$" + playerScript.GetMoney().ToString();
-        pot += intBet;
-        betsText.text = "Bets: $" + pot.ToString();
+        pot += (intBet);
+        betsText.text = "Somme: $" + (pot * quizMultiplier).ToString();
+    }
+    void BetClicked2()
+    {
+        Text newBet = betBtn2.GetComponentInChildren(typeof(Text)) as Text;
+        int intBet = int.Parse(newBet.text.ToString().Remove(0, 1));
+        playerScript.AdjustMoney(-intBet);
+        cashText.text = "$" + playerScript.GetMoney().ToString();
+        pot += (intBet);
+        betsText.text = "Somme: $" + (pot * quizMultiplier).ToString();
+    }
+    void BetClicked3()
+    {
+        Text newBet = betBtn3.GetComponentInChildren(typeof(Text)) as Text;
+        int intBet = int.Parse(newBet.text.ToString().Remove(0, 1));
+        playerScript.AdjustMoney(-intBet);
+        cashText.text = "$" + playerScript.GetMoney().ToString();
+        pot += (intBet);
+        betsText.text = "Somme: $" + (pot * quizMultiplier).ToString();
+    }
+    public void ResetState()
+    {
+        // Réinitialisation basique des textes et scores
+        mainText.gameObject.SetActive(false);
+        scoreText.text = "";
+        dealerScoreText.text = "";
+        betsText.text = "";
+
+        // Cache les cartes visibles si tu veux aussi
+        foreach (GameObject card in playerScript.hand)
+        {
+            card.GetComponent<Renderer>().enabled = false;
+        }
+
+        foreach (GameObject card in dealerScript.hand)
+        {
+            card.GetComponent<Renderer>().enabled = false;
+        }
+
+        hideCard.GetComponent<Renderer>().enabled = false;
+    }
+    
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
     }
 }
